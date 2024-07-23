@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store"
 )
 
 // WebServer ...
@@ -14,6 +15,7 @@ type WebServer struct {
 	config *Config
 	logger *logrus.Logger
 	router *mux.Router
+	store  *store.Store
 }
 
 // New ...
@@ -33,6 +35,10 @@ func (s *WebServer) Start() error {
 
 	s.configureRouter()
 
+	if err := s.configureStore(); err != nil {
+		return err
+	}
+
 	s.logger.Info("Starting web server")
 
 	return http.ListenAndServe(s.config.BindAddr, s.router)
@@ -50,6 +56,17 @@ func (s *WebServer) configureLogger() error {
 
 func (s *WebServer) configureRouter() {
 	s.router.HandleFunc("/time", s.handleTime())
+}
+
+func (s *WebServer) configureStore() error {
+	st := store.New(s.config.Store)
+	if err := st.Open(); err != nil {
+		return err
+	}
+
+	s.store = st
+
+	return nil
 }
 
 func (s *WebServer) handleTime() http.HandlerFunc {
