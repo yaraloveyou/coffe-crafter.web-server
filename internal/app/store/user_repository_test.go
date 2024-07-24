@@ -11,12 +11,10 @@ import (
 func TestUserRepository_Create(t *testing.T) {
 	s, teardown := store.TestStore(t, databaseURL)
 	defer teardown("users")
-	user := &model.User{
-		Email:             "test@test.com",
-		EncryptedPassword: "password",
-		Username:          "test",
-	}
+
+	user := model.TestUser(t)
 	err := s.User().Create(user)
+
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 }
@@ -29,13 +27,10 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	_, err := s.User().FindByEmail(email)
 	assert.Error(t, err)
 
-	user := &model.User{
-		Email:             "test@test.com",
-		EncryptedPassword: "password",
-		Username:          "test",
-	}
+	user := model.TestUser(t)
 	s.User().Create(user)
 	u, err := s.User().FindByEmail(email)
+
 	assert.NoError(t, err)
 	assert.NotNil(t, u)
 }
