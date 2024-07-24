@@ -1,4 +1,4 @@
-package store
+package sqlstore
 
 import (
 	"time"
@@ -20,19 +20,13 @@ func (r *UserRepository) Create(u *model.User) error {
 		return err
 	}
 
-	err := r.store.db.QueryRow(
+	return r.store.db.QueryRow(
 		"INSERT INTO users (email, encrypted_password, username, last_activity) VALUES ($1, $2, $3, $4) RETURNING id",
 		u.Email,
 		u.EncryptedPassword,
 		u.Username,
 		time.Now(),
 	).Scan(&u.ID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // FindByEmail

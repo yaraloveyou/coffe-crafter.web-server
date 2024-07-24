@@ -1,76 +1,35 @@
 package webserver
 
 import (
-	"io"
+	"database/sql"
 	"net/http"
-	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
-	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store"
+	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/sqlstore"
 )
 
-// WebServer ...
-type WebServer struct {
-	config *Config
-	logger *logrus.Logger
-	router *mux.Router
-	store  *store.Store
-}
-
-// New ...
-func New(config *Config) *WebServer {
-	return &WebServer{
-		config: config,
-		logger: logrus.New(),
-		router: mux.NewRouter(),
-	}
-}
-
-// Start ...
-func (s *WebServer) Start() error {
-	if err := s.configureLogger(); err != nil {
-		return err
-	}
-
-	s.configureRouter()
-
-	if err := s.configureStore(); err != nil {
-		return err
-	}
-
-	s.logger.Info("Starting web server")
-
-	return http.ListenAndServe(s.config.BindAddr, s.router)
-}
-
-func (s *WebServer) configureLogger() error {
-	level, err := logrus.ParseLevel(s.config.LogLevel)
+func Start(config *Config) error {
+	db, err := connDB(config.DatabaseURL)
 	if err != nil {
 		return err
 	}
 
-	s.logger.SetLevel(level)
-	return nil
+	defer db.Close()
+
+	store := sqlstore.New(db)
+	server := newServer(store)
+
+	return http.ListenAndServe(config.BindAddr, server)
 }
 
-func (s *WebServer) configureRouter() {
-	s.router.HandleFunc("/time", s.handleTime())
-}
-
-func (s *WebServer) configureStore() error {
-	st := store.New(s.config.Store)
-	if err := st.Open(); err != nil {
-		return err
+func connDB(databaseURL string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return nil, err
 	}
 
-	s.store = st
-
-	return nil
-}
-
-func (s *WebServer) handleTime() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, time.Now().Format(time.RFC1123))
+	if err := db.Ping(); err != nil {
+		return nil, err
 	}
+
+	return db, nil
 }
