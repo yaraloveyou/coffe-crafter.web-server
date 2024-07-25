@@ -35,7 +35,28 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 	err := r.store.db.QueryRow(
 		"SELECT id, email, encrypted_password, username, last_activity FROM users WHERE email = $1",
 		email,
-	).Scan(&user.ID,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.EncryptedPassword,
+		&user.Username,
+		&user.LastActivity,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
+	user := &model.User{}
+	err := r.store.db.QueryRow(
+		"SELECT id, email, encrypted_password, username, last_activity FROM users WHERE username = $1",
+		username,
+	).Scan(
+		&user.ID,
 		&user.Email,
 		&user.Username,
 		&user.EncryptedPassword,
