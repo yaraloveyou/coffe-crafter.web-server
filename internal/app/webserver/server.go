@@ -2,25 +2,31 @@ package webserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/middlewares"
 	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/model"
 	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store"
+	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/utils"
 )
 
 type server struct {
-	router *mux.Router
-	logger *logrus.Logger
-	store  store.Store
+	router     *mux.Router
+	logger     *logrus.Logger
+	store      store.Store
+	redisStore store.RedisStore
 }
 
-func newServer(store store.Store) *server {
+func newServer(store store.Store, rdb store.RedisStore) *server {
 	s := &server{
-		router: mux.NewRouter(),
-		logger: logrus.New(),
-		store:  store,
+		router:     mux.NewRouter(),
+		logger:     logrus.New(),
+		store:      store,
+		redisStore: rdb,
 	}
 
 	s.configureRouter()
@@ -33,8 +39,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
-	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
-	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
+	s.router.HandleFunc("/registration", s.handleUsersRegistration()).Methods("POST")
+	s.router.HandleFunc("/auth", s.handleUsersAuth()).Methods("POST")
+	s.router.HandleFunc("/time", middlewares.Authenticate(s.handleTime())).Methods("GET")
+	s.router.HandleFunc("/refresh-token", s.handleRefreshToken()).Methods("GET")
 }
 
 func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
@@ -48,7 +56,7 @@ func (s *server) respond(w http.ResponseWriter, _ *http.Request, code int, data 
 	}
 }
 
-func (s *server) handleUsersCreate() http.HandlerFunc {
+func (s *server) handleUsersRegistration() http.HandlerFunc {
 	type request struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -79,10 +87,14 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleSessionsCreate() http.HandlerFunc {
+func (s *server) handleUsersAuth() http.HandlerFunc {
 	type request struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+	}
+
+	type respond struct {
+		Token string `json:"token"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +110,61 @@ func (s *server) handleSessionsCreate() http.HandlerFunc {
 			s.error(w, r, http.StatusUnauthorized, store.ErrIncorrectEmailOrPassword)
 			return
 		}
-		// implementation sessions or jwt
-		s.respond(w, r, http.StatusOK, nil)
+
+		aToken, rToken, err := utils.GenerateJwt(u)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		s.redisStore.Set(aToken, rToken)
+
+		res := &respond{
+			Token: fmt.Sprintf("Bearer %s", aToken),
+		}
+
+		s.respond(w, r, http.StatusOK, res)
+	}
+}
+
+func (s *server) handleRefreshToken() http.HandlerFunc {
+	type respond struct {
+		Token string `json:"token"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		tokenString := utils.ExtractTokenFromHandler(r)
+		_, err := s.redisStore.Get(tokenString)
+		if err != nil {
+			s.error(w, r, http.StatusUnauthorized, err)
+			return
+		}
+
+		if err := s.redisStore.Delete(tokenString); err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		aToken, rToken, err := utils.RefreshJwt(tokenString)
+
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		s.redisStore.Set(aToken, rToken)
+
+		res := &respond{
+			Token: fmt.Sprintf("Bearer %s", aToken),
+		}
+
+		s.respond(w, r, http.StatusOK, res)
+	}
+}
+
+func (s *server) handleTime() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		currentTime := time.Now().Format(time.RFC1123)
+
+		s.respond(w, r, http.StatusOK, map[string]string{"time": currentTime})
 	}
 }

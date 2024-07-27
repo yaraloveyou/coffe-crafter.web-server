@@ -5,6 +5,7 @@ type Config struct {
 	BindAddr    string `toml:"bing_addr"`
 	LogLevel    string `toml:"log_level"`
 	DatabaseURL string `toml:"database_url"`
+	RedisAddr   string `toml:"redis_address"`
 }
 
 // NewConfig ...

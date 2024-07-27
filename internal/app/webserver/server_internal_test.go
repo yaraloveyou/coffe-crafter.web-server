@@ -13,7 +13,7 @@ import (
 )
 
 func TestServer_HandleUsersCreate(t *testing.T) {
-	s := newServer(test_store.New())
+	s := newServer(test_store.New(), nil)
 
 	testCases := []struct {
 		name         string
@@ -60,7 +60,7 @@ func TestServer_HandleSessionCraete(t *testing.T) {
 	u := model.TestUser(t)
 	store := test_store.New()
 	store.User().Create(u)
-	s := newServer(store)
+	s := newServer(store, nil)
 
 	testCases := []struct {
 		name         string

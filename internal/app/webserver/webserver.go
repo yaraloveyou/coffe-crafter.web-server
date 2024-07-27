@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	redisstore "github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/redis_store"
 	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/sqlstore"
 )
 
@@ -16,7 +17,8 @@ func Start(config *Config) error {
 	defer db.Close()
 
 	store := sqlstore.New(db)
-	server := newServer(store)
+	rdb := redisstore.New(config.RedisAddr)
+	server := newServer(store, rdb)
 
 	return http.ListenAndServe(config.BindAddr, server)
 }
