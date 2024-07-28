@@ -56,7 +56,7 @@ func TestServer_HandleUsersCreate(t *testing.T) {
 	}
 }
 
-func TestServer_HandleSessionCraete(t *testing.T) {
+func TestServer_HandleSessionCreate(t *testing.T) {
 	u := model.TestUser(t)
 	store := test_store.New()
 	store.User().Create(u)
@@ -103,7 +103,7 @@ func TestServer_HandleSessionCraete(t *testing.T) {
 			rec := httptest.NewRecorder()
 			b := &bytes.Buffer{}
 			json.NewEncoder(b).Encode(tc.payload)
-			req, _ := http.NewRequest(http.MethodPost, "/sessions", b)
+			req, _ := http.NewRequest(http.MethodPost, "/auth", b)
 			s.ServeHTTP(rec, req)
 			assert.Equal(t, tc.expectedCode, rec.Code)
 		})

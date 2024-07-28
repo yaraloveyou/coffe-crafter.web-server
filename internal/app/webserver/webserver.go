@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	redisstore "github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/redis_store"
@@ -17,6 +18,7 @@ func Start(config *Config) error {
 	defer db.Close()
 
 	store := sqlstore.New(db)
+	log.Println(config.RedisAddr)
 	rdb := redisstore.New(config.RedisAddr)
 	server := newServer(store, rdb)
 

@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configPath, "config-path", "configs/web.toml", "path to config file")
+	flag.StringVar(&configPath, "config-path", "configs/dev_web.toml", "path to config file")
 }
 
 func main() {
@@ -23,9 +23,11 @@ func main() {
 	_, err := toml.DecodeFile(configPath, config)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	if err := webserver.Start(config); err != nil {
 		log.Fatal(err)
+		return
 	}
 }

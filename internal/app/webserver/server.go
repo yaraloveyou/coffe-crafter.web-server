@@ -136,7 +136,7 @@ func (s *server) handleRefreshToken() http.HandlerFunc {
 		tokenString := utils.ExtractTokenFromHandler(r)
 		_, err := s.redisStore.Get(tokenString)
 		if err != nil {
-			s.error(w, r, http.StatusUnauthorized, err)
+			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
 
