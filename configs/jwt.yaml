@@ -1,0 +1,3 @@
+refresh_exp: 3600 #3600 seconds - 1 hour
+access_exp: 86400 #86400 seconds - 24 hours
+secret_key: 192b6f78b432b8218094fa88c880d07881e65435817a809f4e34ce14590eb90eae8b4dadf427bcf8154d20dfeeece2f63766e993a65a2a844295052587ad991b

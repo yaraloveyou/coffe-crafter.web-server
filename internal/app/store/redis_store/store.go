@@ -2,7 +2,6 @@ package redisstore
 
 import (
 	"context"
-	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -21,7 +20,7 @@ func New(addr string) *Store {
 		Password: "",
 		DB:       0,
 	})
-	log.Println("Connecting to Redis at", addr)
+	defer rdb.Close()
 	return &Store{
 		client: rdb,
 	}

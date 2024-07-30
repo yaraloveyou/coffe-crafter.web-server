@@ -2,23 +2,25 @@ package webserver
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
 
 	redisstore "github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/redis_store"
 	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/store/sqlstore"
+	"github.com/yaraloveyou/coffe-crafter.web-server/internal/app/utils"
 )
 
-func Start(config *Config) error {
+func Start(config *Config, jwtConfigPath string) error {
 	db, err := connDB(config.DatabaseURL)
 	if err != nil {
 		return err
 	}
-
 	defer db.Close()
 
+	if err = utils.LoadConfig(jwtConfigPath); err != nil {
+		return err
+	}
+
 	store := sqlstore.New(db)
-	log.Println(config.RedisAddr)
 	rdb := redisstore.New(config.RedisAddr)
 	server := newServer(store, rdb)
 

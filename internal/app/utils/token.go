@@ -15,50 +15,50 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var (
-	jwtKey = []byte("secret_key") // output in config file
-)
+func GetJwtKey() []byte {
+	return []byte(config.SecretKey)
+}
 
 func GenerateJwt(u *model.User) (string, string, error) {
-	aExp := time.Now().Add(time.Second * 20)   // output in config file
-	rExp := time.Now().Add(time.Hour * 24 * 7) // output in config file
+	accessExp := time.Now().Add(time.Second * time.Duration(config.AccessExp))
+	refreshExp := time.Now().Add(time.Hour * time.Duration(config.RefreshExp))
 
-	aClaims := &Claims{
+	accessClaims := &Claims{
 		Email:    u.Email,
 		Username: u.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(aExp),
+			ExpiresAt: jwt.NewNumericDate(accessExp),
 		},
 	}
 
-	rClaims := &Claims{
+	refreshClaims := &Claims{
 		Email:    u.Email,
 		Username: u.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(rExp),
+			ExpiresAt: jwt.NewNumericDate(refreshExp),
 		},
 	}
 
-	aToken := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims)
-	rToken := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims)
+	aToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	rToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 
-	aTokenString, err := aToken.SignedString(jwtKey)
+	accessTokenString, err := aToken.SignedString(GetJwtKey())
 	if err != nil {
 		return "", "", err
 	}
 
-	rTokenString, err := rToken.SignedString(jwtKey)
+	refreshTokenString, err := rToken.SignedString(GetJwtKey())
 	if err != nil {
 		return "", "", err
 	}
 
-	return aTokenString, rTokenString, nil // output refresh token in Redis storage
+	return accessTokenString, refreshTokenString, nil // output refresh token in Redis storage
 }
 
 func RefreshJwt(token string) (string, string, error) {
 	claims := &Claims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return GetJwtKey(), nil
 	})
 
 	if err != nil {

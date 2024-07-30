@@ -1,0 +1,4 @@
+bind_addr: :8080
+log_level: debug
+database_url: host=prod_postgres port=5432 dbname=coffe_crafter user=postgres password=admin sslmode=disable
+redis_address: prod_redis:6379

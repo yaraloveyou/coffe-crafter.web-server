@@ -111,16 +111,16 @@ func (s *server) handleUsersAuth() http.HandlerFunc {
 			return
 		}
 
-		aToken, rToken, err := utils.GenerateJwt(u)
+		accessToken, refreshToken, err := utils.GenerateJwt(u)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
-		s.redisStore.Set(aToken, rToken)
+		s.redisStore.Set(accessToken, refreshToken)
 
 		res := &respond{
-			Token: fmt.Sprintf("Bearer %s", aToken),
+			Token: fmt.Sprintf("Bearer %s", accessToken),
 		}
 
 		s.respond(w, r, http.StatusOK, res)

@@ -18,6 +18,8 @@ WORKDIR /app
 
 COPY --from=builder /app/web /app/web
 
-COPY --from=builder /build/configs/web.toml /app/configs/web.toml
+COPY --from=builder /build/configs/prod_web.yaml /app/configs/prod_web.yaml
 
-CMD ["./web", "-config-path",  "configs/web.toml"]
+COPY --from=builder /build/configs/jwt.yaml /app/configs/jwt.yaml
+
+CMD ["./web", "-config-path",  "configs/prod_web.yaml"]
